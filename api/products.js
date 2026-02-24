@@ -1,23 +1,6 @@
 require("dotenv").config();
-
-const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors");
-const productRoutes = require("./routes/productRoutes");
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-// IMPORTANT: no extra /api here
-app.use("/products", productRoutes);
-
-app.get("/", (req, res) => {
-  res.json({ message: "API is running 👋" });
-});
-
-/* Mongo Serverless Connection */
+const Product = require("../api/models/Product"); // adjust path
 
 let cached = global.mongoose;
 
@@ -38,5 +21,16 @@ async function connectDB() {
 
 module.exports = async (req, res) => {
   await connectDB();
-  return app(req, res);
+
+  if (req.method === "GET") {
+    const products = await Product.find();
+    return res.status(200).json(products);
+  }
+
+  if (req.method === "POST") {
+    const product = await Product.create(req.body);
+    return res.status(201).json(product);
+  }
+
+  res.status(405).json({ message: "Method not allowed" });
 };
