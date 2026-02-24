@@ -1,0 +1,36 @@
+require("dotenv").config();
+const mongoose = require("mongoose");
+const Product = require("../api/models/Product"); // adjust path
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGO_URI);
+  }
+
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+module.exports = async (req, res) => {
+  await connectDB();
+
+  if (req.method === "GET") {
+    const products = await Product.find();
+    return res.status(200).json(products);
+  }
+
+  if (req.method === "POST") {
+    const product = await Product.create(req.body);
+    return res.status(201).json(product);
+  }
+
+  res.status(405).json({ message: "Method not allowed" });
+};
